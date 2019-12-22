@@ -48,12 +48,6 @@ void ImgurUploader::setProgressCallback( void (*progressCB)(byte progress) ) {
   _progressCB = progressCB;
 }
 
-void ImgurUploader::setStreamCallback( void (*streamCB)(Stream* client) ) {
-  source = SOURCE_STREAM;
-  _streamCB = streamCB;
-}
-
-
 int ImgurUploader::uploadFile( fs::FS &fs, const char* path ) {
   sourceFile = fs.open( path );
   if( !sourceFile ) {

@@ -47,9 +47,8 @@ class ImgurUploader {
     ImgurUploader(const char *appKey); // get a **client ID** at https://apidocs.imgur.com/?version=latest#authorization-and-oauth
     int uploadFile( fs::FS &fs, const char* path );
     int uploadBytes( const uint8_t* _byteArray, size_t arrayLen, const char* imageName="pic.jpg", const char* imageMimeType="image/jpeg" );
-    int  uploadStream( size_t arrayLen, void (*streamCB)(Stream* client), const char* imageName="pic.jpg", const char* imageMimeType="image/jpeg" );
+    int uploadStream( size_t arrayLen, void (*streamCB)(Stream* client), const char* imageName="pic.jpg", const char* imageMimeType="image/jpeg" );
     void setProgressCallback( void (*progressCB)(byte progress) );
-    void setStreamCallback( void (*streamCB)(Stream* client) );
     char* getURL(void) {
       return URL;
     }
