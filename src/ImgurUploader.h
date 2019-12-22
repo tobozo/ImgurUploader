@@ -7,7 +7,7 @@
 
   MIT License
 
-  Copyright (c) 2018 tobozo
+  Copyright (c) 2019 tobozo
 
   Permission is hereby granted, free of charge, to any person obtaining a copy
   of this software and associated documentation files (the "Software"), to deal
@@ -45,7 +45,7 @@ class ImgurUploader {
     };
     ImgurUploader(const char *appKey); // get a **client ID** at https://apidocs.imgur.com/?version=latest#authorization-and-oauth
     int uploadFile( fs::FS &fs, const char* path );
-    int uploadBytes( uint8_t* _byteArray, const char* imageName="pic.jpg", const char* imageMimeType="image/jpeg" );
+    int uploadBytes( const uint8_t* _byteArray, size_t arrayLen, const char* imageName="pic.jpg", const char* imageMimeType="image/jpeg" );
     char* getURL(void) {
       return URL;
     }
@@ -56,6 +56,7 @@ class ImgurUploader {
     const char *appKey;
     char URL[40];      // http://i.imgur.com/xxxxx.jpg
     uint8_t* byteArray;
+    size_t arrayLen;
     WiFiClientSecure client;
     File sourceFile;
     SourceType source;

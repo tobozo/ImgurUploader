@@ -9,7 +9,7 @@
 
   MIT License
 
-  Copyright (c) 2018 tobozo
+  Copyright (c) 2019 tobozo
 
   Permission is hereby granted, free of charge, to any person obtaining a copy
   of this software and associated documentation files (the "Software"), to deal
@@ -35,6 +35,7 @@
 
 #define IMGUR_UPLOAD_API_URL    "/3/image"
 #define IMGUR_UPLOAD_API_DOMAIN "api.imgur.com"
+#define IMGUR_URL_MASK          "https://imgur.com/%s"
 #define BOUNDARY                "blah-blah-oz"
 #define HEADER                  "--" BOUNDARY
 #define FOOTER                  "--" BOUNDARY "--"
@@ -66,10 +67,24 @@ int ImgurUploader::uploadFile( fs::FS &fs, const char* path ) {
 }
 
 
-int ImgurUploader::uploadBytes( uint8_t* _byteArray, const char* imageName, const char* imageMimeType  ) {
+int ImgurUploader::uploadBytes( const uint8_t* _byteArray, size_t _arrayLen, const char* imageName, const char* imageMimeType  ) {
   source = SOURCE_BYTE_ARRAY;
-  byteArray = _byteArray;
-  return upload( sizeof(byteArray)/sizeof(uint8_t), imageName, imageMimeType ); 
+  byteArray = (uint8_t*)_byteArray;
+  arrayLen = _arrayLen;
+  String mimeType;
+  String fileName = String( imageName );
+  if( fileName.endsWith(".jpg") ) {
+    mimeType = "image/jpeg";
+  } else if( fileName.endsWith(".png") ) {
+    mimeType = "image/png";
+  } else if( fileName.endsWith(".bmp") ) {
+    mimeType = "image/x-windows-bmp";
+  } else if( fileName.endsWith(".gif") ) {
+    mimeType = "image/gif";
+  } else {
+    mimeType = "application/octet-stream";
+  }
+  return upload( arrayLen, fileName.c_str(), mimeType.c_str() ); 
 }
 
 
@@ -114,22 +129,46 @@ int ImgurUploader::upload( size_t imageLen, const char* imageName, const char* i
   return ret;
 }
 
+#define IMGUR_BUFFSIZE 512
 
 void ImgurUploader::sendImageData( WiFiClientSecure *client ) {
+  uint8_t buf[IMGUR_BUFFSIZE];
+  size_t packets = 0;
   switch( source ) {
     case SOURCE_FILE:
       {
-        uint8_t buf[512];
-        size_t packets = 0;
+        log_d("Using filesystem");
         while( (packets = sourceFile.read( buf, sizeof(buf))) > 0 ) {
           client->write( buf, packets );
           log_w("Sent %d bytes", packets);
         }
+        sourceFile.close();
       }
     break;
     case SOURCE_BYTE_ARRAY:
-      client->write( byteArray, sizeof(byteArray)/sizeof(uint8_t) );
-      sourceFile.close();
+      log_d("Using memory");
+      packets = arrayLen;
+      log_d("Byte array size: %d", packets );
+      size_t index = 0;
+      size_t packetSize = IMGUR_BUFFSIZE;
+      while( packets > 0 ) {
+        // copy array chunk into buffer
+        for( size_t i=0; i<packetSize; i++ ) {
+          buf[i] = byteArray[(index*IMGUR_BUFFSIZE)+i];
+        }
+        // send buffer
+        client->write( buf, packetSize );
+        log_w("Sent %d bytes", packetSize);
+        if( packets > IMGUR_BUFFSIZE ) {
+          packets -= IMGUR_BUFFSIZE;
+          if( packets < IMGUR_BUFFSIZE ) {
+            packetSize = packets;
+          }
+          index++;
+        } else {
+          break;
+        }
+      }
     break;
   }
 }
@@ -148,7 +187,7 @@ int ImgurUploader::readResponse(void) {
         if( root["success"].as<String>() == "true" ) {
           String link = root["data"]["link"].as<String>();
           String id = root["data"]["id"].as<String>();
-          sprintf( URL, "https://imgur.com/%s", id.c_str() );
+          sprintf( URL, IMGUR_URL_MASK, id.c_str() );
           Serial.printf("Link: %s, id: %s\n", link.c_str(), id.c_str() );
           ret = 1;
         } else {

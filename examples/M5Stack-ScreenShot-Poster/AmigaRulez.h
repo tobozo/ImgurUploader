@@ -138,7 +138,7 @@ class AmigaRulez {
       Wires  = config.Wires;
 
       setupValues();
-      
+
       tft.fillRect(XPos, YPos, Width, Height, BGColor);
 
       if( Wires > 0 ) {
@@ -149,28 +149,28 @@ class AmigaRulez {
         shadow.fillEllipse( shadow.width()/2, shadow.height()/2, shadow.width()/2-4, shadow.height()/2-2, ShadowColor );
         //shadow.pushSprite( positionX-spriteCenterX + shadow.width()/2, ShadowYPos+shadow.height() );
 
-        
+
         grid.createSprite( Width/2, Height/2 ); // don't overflow heap
-        
+
         grid.fillSprite(BGColor);
         drawGrid(grid, XPos, YPos, Width, Height, grid.width(), grid.height());
         grid.pushSprite( XPos, YPos, BGColor );
-  
+
         grid.fillSprite(BGColor);
         drawGrid(grid, XPos+Width/2, YPos, Width, Height, grid.width(), grid.height());
         grid.pushSprite( XPos+Width/2, YPos, BGColor );
-  
+
         grid.fillSprite(BGColor);
         drawGrid(grid, XPos, YPos+Height/2, Width, Height, grid.width(), grid.height());
         grid.pushSprite( XPos, YPos+Height/2, BGColor );
-  
+
         grid.fillSprite(BGColor);
         drawGrid(grid, XPos+Width/2, YPos+Height/2, Width, Height, grid.width(), grid.height());
         grid.pushSprite( XPos+Width/2, YPos+Height/2, BGColor );
-  
+
         grid.deleteSprite();
 
-        
+
       }
 
       ball.createSprite(spriteWidth, spriteHeight);
@@ -189,14 +189,14 @@ class AmigaRulez {
 
       spriteCenterX = spriteWidth/2 + spriteWidth%2;
       spriteCenterY = spriteHeight/2 - spriteHeight%2;
-     
+
       YPosAmplitude = (Height-(Scale+ScaleAmplitude))/2; // ball will bounce on this span pixels
       VCentering = YPos + (Height-1) - (MaxScaleAmplitude + AmplitudeFactor);// -(YPosAmplitude/2 + Scale + ScaleAmplitude);
-      
+
       BounceMargin = AmplitudeFactor*2+Scale+ScaleAmplitude; // 135
       LeftBoundary = XPos + BounceMargin;
       RightBoundary = XPos + Width - BounceMargin;
-     
+
       TiltRad = TiltDeg * deg2rad;
       lastPositionX = 0;
       lastPositionY = 0;
@@ -309,7 +309,7 @@ class AmigaRulez {
         }
         sprite.drawLine(XPos+i-x, vpos, XPos+x2-x, YPos+vpos+vspace, GridColor);
       }
-      
+
       for( i=0; i<height-vspace+YPos; i+=stepY ) {
         sprite.drawFastHLine(0, i-y, YPos+spanX, GridColor);
       }
@@ -361,7 +361,7 @@ class AmigaRulez {
         positionY = VCentering - YPosAmplitude * absCosAngleY;
 
         int trend = positionY - lastPositionY;
-        
+
         if( !isMovingUp && trend < 0) {
           buzz_floor = true;
         }
@@ -371,14 +371,14 @@ class AmigaRulez {
         } else {
           isMovingUp = false;
         }
-        
+
         ball.fillSprite(BGColor); // Note: Sprite is filled with black when created
         if( Wires > 0 ) {
           shadow.fillSprite( BGColor );
           int r1 = (shadow.width()/2-4)* (1-.5*absCosAngleY);
           int r2 = (shadow.height()/2-2)* (1-.5*absCosAngleY);
           //int shadowcolor = tft.color565( 0xA0, 0xA0, 0xA0 );
-          
+
           shadow.fillEllipse( shadow.width()/2, shadow.height()/2, r1, r2, ShadowColor );
           drawGrid( shadow, positionX-spriteCenterX + shadow.width()/2, ShadowYPos+shadow.height(), Width, Height, Width, Height );
           drawGrid( ball, positionX-spriteCenterX, positionY-spriteCenterY, Width, Height, spriteWidth, spriteHeight );
