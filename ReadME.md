@@ -52,7 +52,7 @@ Usage
     ```C
     int ret = imgurUploader.uploadFile( SD, "/pic.jpg" );
     // or
-    int ret = imgurUploader.uploadBytes( byteArray, "pic.jpg", "image/jpeg" );
+    int ret = imgurUploader.uploadBytes( byteArray, arrayLength, "pic.jpg", "image/jpeg" );
     ```
 
 
