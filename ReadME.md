@@ -53,6 +53,8 @@ Usage
     int ret = imgurUploader.uploadFile( SD, "/pic.jpg" );
     // or
     int ret = imgurUploader.uploadBytes( byteArray, arrayLength, "pic.jpg", "image/jpeg" );
+    // or
+    int ret = imgurUploader.uploadStream( 12345678, &writeStreamCallback, "pic.jpg", "image/jpeg" );  
     ```
 
 
@@ -66,3 +68,13 @@ Usage
     }
     ```
 
+
+Callbacks
+---------
+
+  - Upload progress: `setProgressCallback( &yourProgressFunction )` where `void yourProgressFunction( byte progress )` prints a value between 0 and 100
+
+  - Stream Write: `imgurUploader.uploadStream( streamSize, &writeStreamCallback )` where `writeStreamCallback( Stream* client )` writes the image data by chunks (total size must be `streamSize` bytes exactly!)
+  
+  
+  
