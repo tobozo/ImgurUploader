@@ -43,7 +43,40 @@ void checkWifi() {
 }
 
 
-// example for posting image stored in a byte array (see assets.h)
+// progress callback example function will be fired on each write during upload
+byte lastprogress = 0;
+void progressCallback( byte progress ) {
+  if( lastprogress != progress ) {
+    lastprogress = progress;
+    Serial.printf("Upload progress: %d\n", progress);
+  }
+}
+
+/*
+// Outsider function to write data, must send exactly the amount of bytes given 
+// as first arg to uploadStream()
+void writeStreamCallback( Stream* client ) {
+  size_t buffLen = 512;
+  char buffer[buffLen];
+  while( cameraReadBytes( buffer, &buffLen) ) {
+    client->write( buffer, buffLen );
+  }
+}
+
+// Example for posting image by chunks from the outside of the main class.
+// tradeoff: the size of the written bytes must be know before write starts
+void postStream() {
+  checkWifi();
+  ret = imgurUploader.uploadStream( 12345678, &writeStreamCallback, "blah.jpg", "image/jpeg" );  
+  if( ret > 0 ) {
+    M5.Lcd.qrcode( imgurUploader.getURL() );
+    delay( 10000 );
+    AmigaBallInit();
+  }
+}
+*/
+
+// example for posting image stored in a byte array (what's in assets.h)
 void postBytesArray() {
   checkWifi();
   int ret = imgurUploader.uploadBytes( Miaou_Goldwyn_Mayer_jpg, Miaou_Goldwyn_Mayer_jpg_len, "Miaou_Goldwyn_Mayer.jpg", "image/jpeg" );
@@ -60,7 +93,7 @@ void snapAndPost() {
   M5.ScreenShot.snap();
   int ret = imgurUploader.uploadFile( M5STACK_SD, M5.ScreenShot.fileName );
   if( ret > 0 ) {
-    M5.Lcd.qrcode( imgurUploader.getURL() );
+    M5.Lcd.qrcode( imgurUploader.getURL(), 50, 10, 220, 2);
     delay( 10000 );
     AmigaBallInit();
   }
@@ -86,11 +119,15 @@ void setup() {
   M5.Lcd.println();
   M5.Lcd.println();
   M5.Lcd.setTextColor( YELLOW );
+  M5.Lcd.println("A = Show last QR Code");
+  M5.Lcd.println();
   M5.Lcd.println("B = Filesystem/ScreenShot");
   M5.Lcd.println();
   M5.Lcd.println("C = Flash rom/Byte Array");
   delay(10000);
   AmigaBallInit();
+  // optional, attach a progress callback function
+  imgurUploader.setProgressCallback( &progressCallback );
 }
 
 
@@ -99,6 +136,14 @@ unsigned long lastcheck = millis();
 void loop() {
   if( lastcheck + 100 < millis() ) {
     M5.update();
+    if( M5.BtnA.wasPressed() ) {
+      if( String( imgurUploader.getURL() ) != "" ) {
+        Serial.printf("URL: %s\n", imgurUploader.getURL() );
+        M5.Lcd.qrcode( imgurUploader.getURL(), 50, 10, 220, 2);
+        delay(10000);
+        AmigaBallInit();
+      }
+    }
     if( M5.BtnB.wasPressed() ) {
       // screenshot to filesystem, then upload from filesystem
       snapAndPost();

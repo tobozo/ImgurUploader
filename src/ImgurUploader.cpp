@@ -36,11 +36,22 @@
 #define IMGUR_UPLOAD_API_URL    "/3/image"
 #define IMGUR_UPLOAD_API_DOMAIN "api.imgur.com"
 #define IMGUR_URL_MASK          "https://imgur.com/%s"
+#define IMGUR_BUFFSIZE          512
 #define BOUNDARY                "blah-blah-oz"
 #define HEADER                  "--" BOUNDARY
 #define FOOTER                  "--" BOUNDARY "--"
 
 ImgurUploader::ImgurUploader(const char *appKey) : client(), appKey(appKey) { ; }
+
+
+void ImgurUploader::setProgressCallback( void (*progressCB)(byte progress) ) {
+  _progressCB = progressCB;
+}
+
+void ImgurUploader::setStreamCallback( void (*streamCB)(Stream* client) ) {
+  source = SOURCE_STREAM;
+  _streamCB = streamCB;
+}
 
 
 int ImgurUploader::uploadFile( fs::FS &fs, const char* path ) {
@@ -50,48 +61,36 @@ int ImgurUploader::uploadFile( fs::FS &fs, const char* path ) {
   }
   source = SOURCE_FILE;
   String fileName = sourceFile.name();
-  size_t fileSize = sourceFile.size();
-  String mimeType;
-  if( fileName.endsWith(".jpg") ) {
-    mimeType = "image/jpeg";
-  } else if( fileName.endsWith(".png") ) {
-    mimeType = "image/png";
-  } else if( fileName.endsWith(".bmp") ) {
-    mimeType = "image/x-windows-bmp";
-  } else if( fileName.endsWith(".gif") ) {
-    mimeType = "image/gif";
-  } else {
-    mimeType = "application/octet-stream";
-  }
-  return upload( fileSize, fileName.c_str(), mimeType.c_str() ); 
+  _arrayLen = sourceFile.size();
+  String mimeType = getMimeType( fileName );
+  return upload( fileName.c_str(), mimeType.c_str() ); 
 }
 
 
-int ImgurUploader::uploadBytes( const uint8_t* _byteArray, size_t _arrayLen, const char* imageName, const char* imageMimeType  ) {
+int ImgurUploader::uploadBytes( const uint8_t* _byteArray, size_t arrayLen, const char* imageName, const char* imageMimeType  ) {
   source = SOURCE_BYTE_ARRAY;
   byteArray = (uint8_t*)_byteArray;
-  arrayLen = _arrayLen;
-  String mimeType;
+  _arrayLen = arrayLen;
+  String mimeType = getMimeType( String( imageName ) );
   String fileName = String( imageName );
-  if( fileName.endsWith(".jpg") ) {
-    mimeType = "image/jpeg";
-  } else if( fileName.endsWith(".png") ) {
-    mimeType = "image/png";
-  } else if( fileName.endsWith(".bmp") ) {
-    mimeType = "image/x-windows-bmp";
-  } else if( fileName.endsWith(".gif") ) {
-    mimeType = "image/gif";
-  } else {
-    mimeType = "application/octet-stream";
-  }
-  return upload( arrayLen, fileName.c_str(), mimeType.c_str() ); 
+  return upload( fileName.c_str(), mimeType.c_str() );
 }
 
 
-int ImgurUploader::upload( size_t imageLen, const char* imageName, const char* imageMimeType ) {
+int ImgurUploader::uploadStream( size_t arrayLen, void (*streamCB)(Stream* client), const char* imageName, const char* imageMimeType) {
+  source = SOURCE_STREAM;
+  _arrayLen = arrayLen;
+  _streamCB = streamCB;
+  return upload( imageName, imageMimeType );
+}
+
+
+
+int ImgurUploader::upload( const char* imageName, const char* imageMimeType ) {
   int ret = -1;
   int mimeTypeLen = strlen( imageMimeType );
   int nameLen = strlen( imageName );
+
   if (WiFi.status() != WL_CONNECTED) {
     log_e("WiFi Not connected!");
     return ret;
@@ -103,7 +102,7 @@ int ImgurUploader::upload( size_t imageLen, const char* imageName, const char* i
     return ret;
   }
   log_d("posting image ...");
-  uint32_t length = 16 + 56 + nameLen + 3 + 16 + mimeTypeLen + 2 + imageLen + 2 + 18 + 2;
+  uint32_t length = 16 + 56 + nameLen + 3 + 16 + mimeTypeLen + 2 + _arrayLen + 2 + 18 + 2;
   client.println( "POST " IMGUR_UPLOAD_API_URL " HTTP/1.0" );
   client.print( "Authorization: Client-ID " );
   client.println( appKey );
@@ -119,7 +118,7 @@ int ImgurUploader::upload( size_t imageLen, const char* imageName, const char* i
   client.print( "Content-Type: " ); // 14
   client.println( imageMimeType ); // mimeTypeLen
   client.println(); // +2
-  sendImageData( &client );
+  sendImageData();
   client.println(); // +2
   client.println( FOOTER ); // 16+2
   client.println(); // +2
@@ -129,36 +128,49 @@ int ImgurUploader::upload( size_t imageLen, const char* imageName, const char* i
   return ret;
 }
 
-#define IMGUR_BUFFSIZE 512
 
-void ImgurUploader::sendImageData( WiFiClientSecure *client ) {
+void ImgurUploader::sendImageData() {
   uint8_t buf[IMGUR_BUFFSIZE];
   size_t packets = 0;
+  size_t _progress = 0;
   switch( source ) {
+    case SOURCE_STREAM:
+      if( _streamCB ) {
+        _streamCB( &client );
+      }
+    break;
     case SOURCE_FILE:
       {
         log_d("Using filesystem");
+        size_t total = 0;
         while( (packets = sourceFile.read( buf, sizeof(buf))) > 0 ) {
-          client->write( buf, packets );
-          log_w("Sent %d bytes", packets);
+          client.write( buf, packets );
+          //log_w("Sent %d bytes", packets);
+          total+=packets;
+          _progress = (total*100) / _arrayLen;
+          if( _progressCB ) _progressCB( _progress );
         }
         sourceFile.close();
       }
     break;
     case SOURCE_BYTE_ARRAY:
       log_d("Using memory");
-      packets = arrayLen;
+      packets = _arrayLen;
       log_d("Byte array size: %d", packets );
       size_t index = 0;
       size_t packetSize = IMGUR_BUFFSIZE;
+      size_t total = 0;
       while( packets > 0 ) {
         // copy array chunk into buffer
         for( size_t i=0; i<packetSize; i++ ) {
           buf[i] = byteArray[(index*IMGUR_BUFFSIZE)+i];
         }
         // send buffer
-        client->write( buf, packetSize );
-        log_w("Sent %d bytes", packetSize);
+        client.write( buf, packetSize );
+        //log_w("Sent %d bytes", packetSize);
+        total+=packetSize;
+        _progress = (total*100) / _arrayLen;
+        if( _progressCB ) _progressCB( _progress );
         if( packets > IMGUR_BUFFSIZE ) {
           packets -= IMGUR_BUFFSIZE;
           if( packets < IMGUR_BUFFSIZE ) {
@@ -192,7 +204,7 @@ int ImgurUploader::readResponse(void) {
           ret = 1;
         } else {
           // upload failed
-          log_e("upload failed (file too big, data corrupted?");
+          log_e("Upload failed (JSON response is bigger than the buffer or data got corrupted?)");
           log_e("Response: %s", response.c_str() );           //Print request answer
         }
       }
@@ -202,4 +214,16 @@ int ImgurUploader::readResponse(void) {
 }
 
 
-
+String ImgurUploader::getMimeType( String fileName ) {
+  if( fileName.endsWith(".jpg") ) {
+    return "image/jpeg";
+  } else if( fileName.endsWith(".png") ) {
+    return "image/png";
+  } else if( fileName.endsWith(".bmp") ) {
+    return "image/x-windows-bmp";
+  } else if( fileName.endsWith(".gif") ) {
+    return "image/gif";
+  } else {
+    return "application/octet-stream";
+  }
+}

@@ -41,25 +41,32 @@ class ImgurUploader {
   public:
     enum SourceType {
       SOURCE_FILE,
-      SOURCE_BYTE_ARRAY
+      SOURCE_BYTE_ARRAY,
+      SOURCE_STREAM
     };
     ImgurUploader(const char *appKey); // get a **client ID** at https://apidocs.imgur.com/?version=latest#authorization-and-oauth
     int uploadFile( fs::FS &fs, const char* path );
     int uploadBytes( const uint8_t* _byteArray, size_t arrayLen, const char* imageName="pic.jpg", const char* imageMimeType="image/jpeg" );
+    int  uploadStream( size_t arrayLen, void (*streamCB)(Stream* client), const char* imageName="pic.jpg", const char* imageMimeType="image/jpeg" );
+    void setProgressCallback( void (*progressCB)(byte progress) );
+    void setStreamCallback( void (*streamCB)(Stream* client) );
     char* getURL(void) {
       return URL;
     }
   private:
-    int upload(size_t imageSize, const char* imageName, const char* imageMimeType);
-    void sendImageData( WiFiClientSecure *client );
+    int upload(const char* imageName, const char* imageMimeType);
+    void sendImageData();
+    String getMimeType( String fileName );
     int readResponse(void);
     const char *appKey;
     char URL[40];      // http://i.imgur.com/xxxxx.jpg
     uint8_t* byteArray;
-    size_t arrayLen;
+    size_t _arrayLen;
     WiFiClientSecure client;
     File sourceFile;
     SourceType source;
+    void (*_progressCB)(byte progress);
+    void (*_streamCB)(Stream* client);
 };
 
 #endif
