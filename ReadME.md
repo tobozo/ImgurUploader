@@ -28,31 +28,41 @@ Usage
 
 2) Set the client ID in the sketch
 
+    ```C
     #define IMGUR_CLIENT_ID "your-imgur-client-id"
+    ```
 
 
 3) Create an ImgurUploader instance
 
+    ```C
     ImgurUploader imgurUploader( IMGUR_CLIENT_ID );
+    ```
 
 
 4) Connect to the WiFi
 
-    WiFi.connect()
+    ```C
+    WiFi.connect();
+    ```
 
 
 5) Send the data
 
+    ```C
     int ret = imgurUploader.uploadFile( SD, "/pic.jpg" );
     // or
     int ret = imgurUploader.uploadBytes( byteArray, "pic.jpg", "image/jpeg" );
+    ```
 
 
 6) Get the URL
 
+    ```C
     if( ret > 0 ) {
       Serial.println( imgurUploader.getURL() );
     } else {
       Serial.println( "Upload failed" );
     }
+    ```
 
