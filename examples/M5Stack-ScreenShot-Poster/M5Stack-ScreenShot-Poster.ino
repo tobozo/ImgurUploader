@@ -1,20 +1,44 @@
-
 #include <WiFi.h>
 #include <M5Stack.h> // https://github.com/tobozo/ESP32-Chimera-Core
 #include <M5StackUpdater.h> // https://github.com/tobozo/M5Stack-SD-Updater
 #include <ImgurUploader.h>
-
 #include "AmigaRulez.h"
 #include "assets.h"
 
+// MANDATORY: put your ID here and uncomment
 //#define IMGUR_CLIENT_ID "your-imgur-client-id"
+
+// OPTIONAL (if the ESP32 can reuse a previous connection)
+//#define WIFI_SSID "your-wifi-password"
+//#define WIFI_PASS "your-wifi-password"
 
 #ifndef IMGUR_CLIENT_ID
   #error "No client ID defined, see how to get one at https://medium.com/@microaeris/getting-started-with-the-imgur-api-4e96c352658a"
 #endif
 
+
 ImgurUploader imgurUploader( IMGUR_CLIENT_ID );
 
+
+void checkWifi() {
+  // some routers do MAC filtering
+  Serial.printf("Current MAC Address: %s (must be allowed by your router)\n", String(WiFi.macAddress()).c_str());
+  if(WiFi.status() != WL_CONNECTED ) {
+    WiFi.mode(WIFI_STA);
+    #if defined(WIFI_SSID) && defined(WIFI_PASS)
+      WiFi.begin( WIFI_SSID, WIFI_PASS );
+    #else
+      WiFi.begin();
+    #endif
+
+    while(WiFi.status() != WL_CONNECTED) {
+      Serial.println("Attempting to connect...");
+      delay(1000);
+    }
+  }
+  Serial.printf("Connected to %s\n", String(WiFi.SSID()).c_str());
+  Serial.printf("IP address: %s\n", String(WiFi.localIP()).c_str()); 
+}
 
 // animaton for the ScreenShot
 void AmigaBallInit() {
@@ -26,21 +50,6 @@ void AmigaBallInit() {
 }
 
 
-void checkWifi() {
-  if(WiFi.status() != WL_CONNECTED ) {
-    WiFi.mode(WIFI_STA);
-    Serial.println(WiFi.macAddress());
-    WiFi.begin();
-    while(WiFi.status() != WL_CONNECTED) {
-      //log_e("Not connected");
-      delay(1000);
-    }
-    log_w("Connected!");
-    Serial.print("Connected to "); Serial.println(WiFi.SSID());
-    Serial.print("IP address: "); Serial.println(WiFi.localIP()); 
-    Serial.println("");
-  }
-}
 
 
 // progress callback example function will be fired on each write during upload
@@ -108,7 +117,7 @@ void setup() {
     updateFromFS();
     ESP.restart();
   }
-  WiFi.begin();
+  WiFi.begin(); // pre-connect
   M5.Lcd.setTextSize(2);
   M5.Lcd.setTextColor( GREEN );
   M5.Lcd.println("imgur.com Uploader");

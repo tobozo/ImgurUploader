@@ -52,6 +52,7 @@ int ImgurUploader::uploadFile( fs::FS &fs, const char* path ) {
   sourceFile = fs.open( path );
   if( !sourceFile ) {
     log_e("Could not open path %s", path );
+    return -1;
   }
   source = SOURCE_FILE;
   String fileName = sourceFile.name();
