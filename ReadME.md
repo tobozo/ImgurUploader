@@ -1,4 +1,6 @@
  
+[![License: MIT](https://img.shields.io/github/license/mashape/apistatus.svg)](https://github.com/tobozo/M5Stack-SD-Updater/blob/master/LICENSE)
+ 
 
 ### ImgurUploader
 
