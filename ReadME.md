@@ -7,8 +7,9 @@
 imgur.com image upload library for ESP32
 
 
-What is it?
------------
+
+❓ What is it?
+--------------
 This library will let you upload images to imgur.com using WiFi.
 It can read from a file (SD, SD_MMC, SPIFFS) or from a byte array.
 This library is heavily inspired from the Arduino Imgur library [https://github.com/tinkerlog/Imgur](https://github.com/tinkerlog/Imgur)
@@ -18,15 +19,16 @@ It has been totally rewritten to fit the ESP32's WiFiClientSecure requirements, 
 Big thanks to [@tinkerlog](https://github.com/tinkerlog/) for the inspiration.
 
 
-Install
--------
+🏗️ Install
+----------
 Download the zip file and install from the menu Sketch / Include Library / Add .ZIP Library
 
 
-Usage
------
 
-1) [Get an imgur client ID](https://medium.com/@microaeris/getting-started-with-the-imgur-api-4e96c352658a)
+🛠️ Usage
+--------
+
+1) **[Get an imgur client ID](https://medium.com/@microaeris/getting-started-with-the-imgur-api-4e96c352658a)**
 
 2) Set the client ID in the sketch
 
@@ -60,7 +62,7 @@ Usage
     ```
 
 
-6) Get the URL
+6) Get the resulting imgur.com URL
 
     ```C
     if( ret > 0 ) {
