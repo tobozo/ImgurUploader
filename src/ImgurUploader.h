@@ -4,6 +4,8 @@
 
   This library is inspired from Arduino Imgur library
   https://github.com/tinkerlog/Imgur
+  It has been totally rewritten to fit the WiFiClientSecure requirements,
+  extended to different mime types and sources, and adapted to imgur's API v3.
 
   MIT License
 
@@ -35,6 +37,7 @@
 #include <HTTPClient.h>
 #include <ArduinoJson.h>
 #include <FS.h>
+//#include "cert.h"
 
 
 class ImgurUploader {

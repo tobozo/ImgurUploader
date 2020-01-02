@@ -32,6 +32,7 @@
 */
 
 #include "ImgurUploader.h"
+#include "cert.h"
 
 #define IMGUR_UPLOAD_API_URL    "/3/image"
 #define IMGUR_UPLOAD_API_DOMAIN "api.imgur.com"
@@ -91,7 +92,8 @@ int ImgurUploader::upload( const char* imageName, const char* imageMimeType ) {
     return ret;
   }
   log_d("connecting ...");
-  client.setCACert( NULL ); // YOLO Mode enabled
+  client.setCACert( api_imgur_com_ca );
+  // client.setCACert( NULL ); // YOLO Mode enabled
   if (!client.connect("api.imgur.com", 443)) {
     log_e("Connection failed!");
     return ret;
