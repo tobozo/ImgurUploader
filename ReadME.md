@@ -21,7 +21,13 @@ Big thanks to [@tinkerlog](https://github.com/tinkerlog/) for the inspiration.
 
 🏗️ Install
 ----------
-Download the zip file and install from the menu Sketch / Include Library / Add .ZIP Library
+
+For the lazy: search for "imgurUploader" in the Arduino library manager and click "install".
+
+For the brave: download the the [latest release](https://github.com/tobozo/ImgurUploader/releases) from this repository and use the import option from the Arduino IDE sketch menu.
+
+![image](https://user-images.githubusercontent.com/1893754/71663462-9eeca380-2d55-11ea-94fb-3b7ce9762cea.png)
+
 
 
 
