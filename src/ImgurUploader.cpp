@@ -253,8 +253,6 @@ const char* ImgurUploader::getMimeType( const char* _fileName ) {
     return "video/x-flv";
   } else if( fileName.endsWith(".wmv") ) {
     return "video/x-ms-wmv";
-  } else if( fileName.endsWith(".wmv") ) {
-    return "video/x-ms-wmv";
   } else {
     return "application/octet-stream";
   }
