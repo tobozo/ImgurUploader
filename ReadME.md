@@ -4,13 +4,13 @@
 
 ### ImgurUploader
 
-imgur.com image upload library for ESP32
+imgur.com image/video upload library for ESP32
 
 
 
 ❓ What is it?
 --------------
-This library will let you upload images to imgur.com using WiFi.
+This library will let you upload images or videos to imgur.com using WiFi.
 It can read from a file (SD, SD_MMC, SPIFFS) or from a byte array.
 This library is heavily inspired from the Arduino Imgur library [https://github.com/tinkerlog/Imgur](https://github.com/tinkerlog/Imgur)
 
