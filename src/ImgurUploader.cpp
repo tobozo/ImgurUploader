@@ -42,6 +42,7 @@
 #define HEADER                  "--" BOUNDARY
 #define FOOTER                  "--" BOUNDARY "--"
 
+
 ImgurUploader::ImgurUploader(const char *appKey) : client(), appKey(appKey) { ; }
 
 
@@ -49,32 +50,41 @@ void ImgurUploader::setProgressCallback( void (*progressCB)(byte progress) ) {
   _progressCB = progressCB;
 }
 
-int ImgurUploader::uploadFile( fs::FS &fs, const char* path ) {
-  sourceFile = fs.open( path );
-  if( !sourceFile ) {
-    log_e("Could not open path %s", path );
-    return -1;
+static byte lastprogress = 0;
+void defaultProgressCallback( byte progress ) {
+  if( lastprogress != progress ) {
+    lastprogress = progress;
+    log_n("Upload progress: %d", progress);
   }
-  source = SOURCE_FILE;
-  String fileName = sourceFile.name();
-  _arrayLen = sourceFile.size();
-  String mimeType = getMimeType( fileName );
-  return upload( fileName.c_str(), mimeType.c_str() ); 
 }
 
 
-int ImgurUploader::uploadBytes( const uint8_t* _byteArray, size_t arrayLen, const char* imageName, const char* imageMimeType  ) {
-  source = SOURCE_BYTE_ARRAY;
-  byteArray = (uint8_t*)_byteArray;
+int ImgurUploader::uploadFile( fs::FS &fs, const char* path ) {
+  _sourceFile = fs.open( path );
+  if( !_sourceFile ) {
+    log_n("Could not open path %s", path );
+    return -1;
+  }
+  _source = SOURCE_FILE;
+  const char* fileName = _sourceFile.name();
+  _arrayLen = _sourceFile.size();
+  const char* mimeType = getMimeType( fileName );
+  return upload( fileName, mimeType ); 
+}
+
+
+int ImgurUploader::uploadBytes( const uint8_t* byteArray, size_t arrayLen, const char* imageName, const char* imageMimeType  ) {
+  _source = SOURCE_BYTE_ARRAY;
+  _byteArray = (uint8_t*)_byteArray;
   _arrayLen = arrayLen;
-  String mimeType = getMimeType( String( imageName ) );
-  String fileName = String( imageName );
-  return upload( fileName.c_str(), mimeType.c_str() );
+  const char* mimeType = getMimeType( imageName );
+  //String fileName = String( imageName );
+  return upload( imageName, mimeType );
 }
 
 
 int ImgurUploader::uploadStream( size_t arrayLen, void (*streamCB)(Stream* client), const char* imageName, const char* imageMimeType) {
-  source = SOURCE_STREAM;
+  _source = SOURCE_STREAM;
   _arrayLen = arrayLen;
   _streamCB = streamCB;
   return upload( imageName, imageMimeType );
@@ -88,14 +98,14 @@ int ImgurUploader::upload( const char* imageName, const char* imageMimeType ) {
   int nameLen = strlen( imageName );
 
   if (WiFi.status() != WL_CONNECTED) {
-    log_e("WiFi Not connected!");
+    log_n("WiFi Not connected!");
     return ret;
   }
   log_d("connecting ...");
   client.setCACert( api_imgur_com_ca );
   // client.setCACert( NULL ); // YOLO Mode enabled
   if (!client.connect("api.imgur.com", 443)) {
-    log_e("Connection failed!");
+    log_n("Connection failed!");
     return ret;
   }
   log_d("posting image ...");
@@ -130,24 +140,27 @@ void ImgurUploader::sendImageData() {
   uint8_t buf[IMGUR_BUFFSIZE];
   size_t packets = 0;
   size_t _progress = 0;
-  switch( source ) {
+  switch( _source ) {
     case SOURCE_STREAM:
       if( _streamCB ) {
         _streamCB( &client );
+      } else {
+        log_n("Stream method requested but no valid callback was defined!");
       }
     break;
     case SOURCE_FILE:
       {
         log_d("Using filesystem");
         size_t total = 0;
-        while( (packets = sourceFile.read( buf, sizeof(buf))) > 0 ) {
+        while( (packets = _sourceFile.read( buf, sizeof(buf))) > 0 ) {
           client.write( buf, packets );
           //log_w("Sent %d bytes", packets);
           total+=packets;
           _progress = (total*100) / _arrayLen;
           if( _progressCB ) _progressCB( _progress );
+          else defaultProgressCallback( _progress );
         }
-        sourceFile.close();
+        _sourceFile.close();
       }
     break;
     case SOURCE_BYTE_ARRAY:
@@ -160,11 +173,11 @@ void ImgurUploader::sendImageData() {
       while( packets > 0 ) {
         // copy array chunk into buffer
         for( size_t i=0; i<packetSize; i++ ) {
-          buf[i] = byteArray[(index*IMGUR_BUFFSIZE)+i];
+          buf[i] = _byteArray[(index*IMGUR_BUFFSIZE)+i];
         }
         // send buffer
         client.write( buf, packetSize );
-        //log_w("Sent %d bytes", packetSize);
+        log_v("Sent %d bytes", packetSize);
         total+=packetSize;
         _progress = (total*100) / _arrayLen;
         if( _progressCB ) _progressCB( _progress );
@@ -201,7 +214,7 @@ int ImgurUploader::readResponse(void) {
           ret = 1;
         } else {
           // upload failed
-          log_e("Upload failed (JSON response is bigger than the buffer or data got corrupted?)");
+          log_n("Upload failed (JSON response is bigger than the buffer or data got corrupted?)");
           log_e("Response: %s", response.c_str() );           //Print request answer
         }
       }
@@ -210,16 +223,38 @@ int ImgurUploader::readResponse(void) {
   return ret;
 }
 
-
-String ImgurUploader::getMimeType( String fileName ) {
-  if( fileName.endsWith(".jpg") ) {
+const char* ImgurUploader::getMimeType( const char* _fileName ) {
+  String fileName =  _fileName;
+  if( fileName.endsWith(".jpg") || fileName.endsWith(".jpeg") ) {
     return "image/jpeg";
   } else if( fileName.endsWith(".png") ) {
     return "image/png";
+  } else if( fileName.endsWith(".apng") ) { // cursed format
+    return "image/apng";
+  } else if( fileName.endsWith(".tiff") ) {
+    return "image/tiff";
   } else if( fileName.endsWith(".bmp") ) {
     return "image/x-windows-bmp";
   } else if( fileName.endsWith(".gif") ) {
     return "image/gif";
+  } else if( fileName.endsWith(".mp4") ) {
+    return "video/mp4";
+  } else if( fileName.endsWith(".mpg") || fileName.endsWith(".mpeg") ) {
+    return "video/mpeg";
+  } else if( fileName.endsWith(".avi") ) {
+    return "video/x-msvideo";
+  } else if( fileName.endsWith(".webm") ) {
+    return "video/webm";
+  } else if( fileName.endsWith(".mkv") ) {
+    return "video/x-matroska";
+  } else if( fileName.endsWith(".mov") ) {
+    return "video/quicktime";
+  } else if( fileName.endsWith(".flv") ) {
+    return "video/x-flv";
+  } else if( fileName.endsWith(".wmv") ) {
+    return "video/x-ms-wmv";
+  } else if( fileName.endsWith(".wmv") ) {
+    return "video/x-ms-wmv";
   } else {
     return "application/octet-stream";
   }

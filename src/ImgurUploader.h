@@ -37,38 +37,55 @@
 #include <HTTPClient.h>
 #include <ArduinoJson.h>
 #include <FS.h>
-//#include "cert.h"
 
 
 class ImgurUploader {
   public:
+
     enum SourceType {
       SOURCE_FILE,
       SOURCE_BYTE_ARRAY,
       SOURCE_STREAM
     };
-    ImgurUploader(const char *appKey); // get a **client ID** at https://apidocs.imgur.com/?version=latest#authorization-and-oauth
-    int uploadFile( fs::FS &fs, const char* path );
-    int uploadBytes( const uint8_t* _byteArray, size_t arrayLen, const char* imageName="pic.jpg", const char* imageMimeType="image/jpeg" );
-    int uploadStream( size_t arrayLen, void (*streamCB)(Stream* client), const char* imageName="pic.jpg", const char* imageMimeType="image/jpeg" );
-    void setProgressCallback( void (*progressCB)(byte progress) );
-    char* getURL(void) {
-      return URL;
-    }
+    // get a **client ID** at https://apidocs.imgur.com/?version=latest#authorization-and-oauth
+    ImgurUploader(const char *appKey);
+
+    // upload from filesystem
+    int   uploadFile( fs::FS &fs, const char* path );
+
+    // upload from a bytes _array
+    int   uploadBytes( const uint8_t* byteArray, size_t arrayLen, const char* imageName="pic.jpg", const char* imageMimeType="image/jpeg" );
+
+    // upload from a stream source
+    int   uploadStream( size_t arrayLen, void (*streamCB)( Stream* client ), const char* imageName="pic.jpg", const char* imageMimeType="image/jpeg" );
+
+    // replace the default progress callback by a custom callback
+    void  setProgressCallback( void (*progressCB)( byte progress ) );
+
+    // retrieve the last successfully submitted URL
+    char* getURL(void) { return URL; }
+
   private:
-    int upload(const char* imageName, const char* imageMimeType);
-    void sendImageData();
-    String getMimeType( String fileName );
-    int readResponse(void);
-    const char *appKey;
-    char URL[40];      // http://i.imgur.com/xxxxx.jpg
-    uint8_t* byteArray;
-    size_t _arrayLen;
+
+    void             sendImageData();
+    void             (*_progressCB)( byte progress ); // progress callback pointer
+    void             (*_streamCB)( Stream* client ); // stream write callback pointer
+
+    int              upload( const char* imageName, const char* imageMimeType );
+    int              readResponse( void );
+
+    const char*      getMimeType( const char* fileName );
+
+    const char*      appKey;
+    char             URL[40]; // http://i.imgur.com/xxxxx.jpg
+    uint8_t*         _byteArray;
+    size_t           _arrayLen;
+
     WiFiClientSecure client;
-    File sourceFile;
-    SourceType source;
-    void (*_progressCB)(byte progress);
-    void (*_streamCB)(Stream* client);
+
+    File             _sourceFile;
+    SourceType       _source;
+
 };
 
 #endif

@@ -36,8 +36,7 @@ void checkWifi() {
       delay(1000);
     }
   }
-  Serial.printf("Connected to %s\n", String(WiFi.SSID()).c_str());
-  Serial.printf("IP address: %s\n", String(WiFi.localIP()).c_str()); 
+  Serial.println("Connected to " + WiFi.SSID() + "\nIP address: " + WiFi.localIP().toString());
 }
 
 // animaton for the ScreenShot
