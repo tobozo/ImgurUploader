@@ -201,7 +201,7 @@ int ImgurUploader::readResponse(void) {
   while (client.connected()) {
     if(client.available()) {
       String response = client.readStringUntil('\n');
-      log_v(response);
+      log_v("%s", response.c_str());
       DynamicJsonDocument jsonImgurBuffer( 8192 );
       DeserializationError error = deserializeJson(jsonImgurBuffer, response );
       if (!error) {
