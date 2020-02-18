@@ -1,5 +1,8 @@
  
 [![License: MIT](https://img.shields.io/github/license/mashape/apistatus.svg)](https://github.com/tobozo/M5Stack-SD-Updater/blob/master/LICENSE)
+
+
+[![arduino-library-badge](https://www.ardu-badge.com/badge/ImgurUploader.svg?)](https://www.ardu-badge.com/ImgurUploader)
  
 
 ### ImgurUploader
