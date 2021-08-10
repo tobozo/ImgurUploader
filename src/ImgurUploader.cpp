@@ -37,7 +37,7 @@
 #define IMGUR_UPLOAD_API_URL    "/3/image"
 #define IMGUR_UPLOAD_API_DOMAIN "api.imgur.com"
 #define IMGUR_URL_MASK          "https://imgur.com/%s"
-#define IMGUR_BUFFSIZE          512
+#define IMGUR_BUFFSIZE          4096
 #define BOUNDARY                "blah-blah-oz"
 #define HEADER                  "--" BOUNDARY
 #define FOOTER                  "--" BOUNDARY "--"
@@ -69,13 +69,13 @@ int ImgurUploader::uploadFile( fs::FS &fs, const char* path ) {
   const char* fileName = _sourceFile.name();
   _arrayLen = _sourceFile.size();
   const char* mimeType = getMimeType( fileName );
-  return upload( fileName, mimeType ); 
+  return upload( fileName, mimeType );
 }
 
 
 int ImgurUploader::uploadBytes( const uint8_t* byteArray, size_t arrayLen, const char* imageName, const char* imageMimeType  ) {
   _source = SOURCE_BYTE_ARRAY;
-  _byteArray = (uint8_t*)_byteArray;
+  _byteArray = (uint8_t*)byteArray;
   _arrayLen = arrayLen;
   const char* mimeType = getMimeType( imageName );
   //String fileName = String( imageName );
@@ -137,7 +137,11 @@ int ImgurUploader::upload( const char* imageName, const char* imageMimeType ) {
 
 
 void ImgurUploader::sendImageData() {
-  uint8_t buf[IMGUR_BUFFSIZE];
+  uint8_t *buf = (uint8_t*)calloc( IMGUR_BUFFSIZE+1, sizeof(uint8_t) );
+  if( buf == NULL ) {
+    log_e("Can't alloc %d bytes, aborting", IMGUR_BUFFSIZE+1);
+    return;
+  }
   size_t packets = 0;
   size_t _progress = 0;
   switch( _source ) {
@@ -193,6 +197,7 @@ void ImgurUploader::sendImageData() {
       }
     break;
   }
+  free(buf);
 }
 
 
